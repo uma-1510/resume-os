@@ -11,7 +11,7 @@
 //   All messages follow { action: string, data: any }
 //   All responses follow { success: boolean, data?: any, error?: any }
 
-import { tailorResume, validateApiKey, rebuildPreferenceSummary, parseGeminiError } from '../utils/ai.js';
+import { tailorResume, rebuildPreferenceSummary, parseGeminiError } from '../utils/ai.js';
 import { generateDocx, buildFilename } from '../utils/docx.js';
 import { parseResumeFile } from '../utils/resume-parser.js';
 import {
@@ -23,29 +23,24 @@ import {
   clearMemory,
 } from '../utils/memory.js';
 
-// ─── Extension install handler ─────────────────────────────────────────────
+// Extension install handler
 chrome.runtime.onInstalled.addListener(({ reason }) => {
   if (reason === 'install') {
-    // Open the side panel on first install
-    // WHY: Users need to complete onboarding before they can use the extension.
-    //      Opening the panel immediately gives clear entry point.
     chrome.tabs.create({ url: 'chrome://newtab' }, (tab) => {
       setTimeout(() => {
         chrome.sidePanel.open({ tabId: tab.id }).catch(() => {
-          // Side panel open may fail if tab isn't ready — that's fine,
-          // user can click the extension icon to open it
         });
       }, 500);
     });
   }
 });
 
-// ─── Action button click → open side panel ────────────────────────────────
+// Action button click → open side panel 
 chrome.action.onClicked.addListener((tab) => {
   chrome.sidePanel.open({ tabId: tab.id });
 });
 
-// ─── Main message router ──────────────────────────────────────────────────
+// Main message router
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   const { action, data } = message;
 
@@ -62,22 +57,15 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       });
     });
 
-  return true; // Keep message channel open for async response
+  return true;
 });
 
-// ─── Message handlers ──────────────────────────────────────────────────────
+// Message handlers
 
 async function handleMessage(action, data, sender) {
   switch (action) {
 
-    // ── Validate API key (called during onboarding) ───────────────────────
-    case 'VALIDATE_API_KEY': {
-      const result = await validateApiKey(data.apiKey);
-      if (!result.valid) throw result.error;
-      return { valid: true };
-    }
-
-    // ── Save settings ─────────────────────────────────────────────────────
+    // Save settings
     case 'SAVE_SETTINGS': {
       const { name, apiKey, baseResumeText, onboardingDone } = data;
       await chromeStorageSet({
@@ -89,7 +77,7 @@ async function handleMessage(action, data, sender) {
       return { saved: true };
     }
 
-    // ── Get settings ──────────────────────────────────────────────────────
+    // Get settings
     case 'GET_SETTINGS': {
       const settings = await chromeStorageGet([
         'ros_name', 'ros_apiKey', 'ros_baseResume', 'ros_onboardingDone',
@@ -102,8 +90,7 @@ async function handleMessage(action, data, sender) {
       };
     }
 
-    // ── Parse uploaded resume file ─────────────────────────────────────────
-    // WHY in background: mammoth.js is bundled here. Content/panel can't use it.
+    // Parse uploaded resume file - WHY in background: mammoth.js is bundled here. Content/panel can't use it.
     case 'PARSE_RESUME_FILE': {
       const { fileData, filename } = data;
       // fileData is a base64 string (files can't be sent directly via messages)
@@ -115,7 +102,7 @@ async function handleMessage(action, data, sender) {
       return await parseResumeFile(bytes.buffer, filename);
     }
 
-    // ── Tailor resume via Gemini ───────────────────────────────────────────
+    // Tailor resume via Gemini
     case 'TAILOR_RESUME': {
       const settings = await chromeStorageGet(['ros_apiKey', 'ros_baseResume']);
       const apiKey = settings.ros_apiKey;
@@ -132,8 +119,6 @@ async function handleMessage(action, data, sender) {
         apiKey,
         baseResume,
         jobDescription: data.jobDescription,
-        missingKeywords: data.missingKeywords || [],
-        jdKeywords: data.jdKeywords || [],
         preferenceSummary,
       });
 
@@ -151,7 +136,7 @@ async function handleMessage(action, data, sender) {
       const arrayBuffer = await generateDocx(resume);
       const filename = buildFilename(resume, jobData);
 
-      // Convert ArrayBuffer → base64 string for message passing
+      // Convert ArrayBuffer - base64 string for message passing
       // WHY base64: chrome.runtime.sendMessage can't send ArrayBuffer directly
       const uint8 = new Uint8Array(arrayBuffer);
       let binary = '';
@@ -163,7 +148,7 @@ async function handleMessage(action, data, sender) {
       return { base64, filename };
     }
 
-    // ── Record confirmed session to career memory ──────────────────────────
+    // Record confirmed session to career memory
     case 'RECORD_SESSION': {
       const { jobData, confirmedResume, keywordsUsed } = data;
       const sessionId = await recordSession({ jobData, confirmedResume, keywordsUsed });
@@ -185,26 +170,26 @@ async function handleMessage(action, data, sender) {
       return { sessionId };
     }
 
-    // ── Update session status (applied, interview, etc.) ───────────────────
+    // Update session status (applied, interview, etc.)
     case 'UPDATE_STATUS': {
       await updateSessionStatus(data.sessionId, data.status);
       return { updated: true };
     }
 
-    // ── Get all sessions for History tab ──────────────────────────────────
+    // Get all sessions for History tab
     case 'GET_MEMORY': {
       const memory = await readMemory();
       return { memory };
     }
 
-    // ── Job detected by content script — relay to side panel ─────────────
+    // Job detected by content script — relay to side panel
     case 'JOB_DETECTED': {
       // Broadcast to side panel
       chrome.runtime.sendMessage({ action: 'JOB_DETECTED_RELAY', data });
       return { relayed: true };
     }
 
-    // ── Clear all memory ──────────────────────────────────────────────────
+    // Clear all memory
     case 'CLEAR_MEMORY': {
       await clearMemory();
       return { cleared: true };
@@ -215,7 +200,7 @@ async function handleMessage(action, data, sender) {
   }
 }
 
-// ─── Storage helpers ──────────────────────────────────────────────────────
+// Storage helpers
 
 function chromeStorageGet(keys) {
   return new Promise((resolve) => {

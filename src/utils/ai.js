@@ -1,64 +1,33 @@
-// ai.js — Gemini SDK wrapper
-//
-// WHY we use the @google/generative-ai SDK instead of raw fetch():
-//   Direct fetch() to Gemini's REST endpoint from a browser extension fails
-//   with CORS errors. The SDK uses a request path that Chrome's extension
-//   context permits. No proxy, no Cloudflare Worker, no backend required.
-//   Bundle cost: ~85KB minified — acceptable for an extension.
-//
-// WHY gemini-2.0-flash:
-//   Free tier: 15 req/min, 1500 req/day. A heavy job seeker applies to
-//   10-20 jobs/week. This is effectively unlimited for individual use.
-//   Flash is also significantly faster than Pro, important for UX.
-
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { buildSystemPrompt, buildUserPrompt, buildSummaryPrompt } from './prompts.js';
 
-const MODEL_ID = 'gemini-2.0-flash';
-
-// ─── validateApiKey ──────────────────────────────────────────────────────────
-// Called during onboarding to verify key before marking setup complete.
-// WHY: Discovering an invalid key mid-rewrite is a bad experience.
-//      Better to catch it at save time with a clear, actionable error.
-export async function validateApiKey(apiKey) {
-  try {
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: MODEL_ID });
-    // Minimal test call — tiny input, tiny output
-    const result = await model.generateContent('Say "ok" and nothing else.');
-    const text = result.response.text();
-    return { valid: true, text };
-  } catch (err) {
-    return {
-      valid: false,
-      error: parseGeminiError(err),
-    };
-  }
-}
+const MODEL_ID = 'gemini-2.5-flash';
 
 // ─── tailorResume ────────────────────────────────────────────────────────────
 // Main AI call: takes base resume + JD → returns structured JSON resume
-export async function tailorResume({ apiKey, baseResume, jobDescription, missingKeywords, jdKeywords, preferenceSummary }) {
+export async function tailorResume({ apiKey, baseResume, jobDescription, preferenceSummary }) {
   const genAI = new GoogleGenerativeAI(apiKey);
   const model = genAI.getGenerativeModel({
     model: MODEL_ID,
     systemInstruction: buildSystemPrompt(preferenceSummary),
     generationConfig: {
-      // WHY 4096: Resumes are long. 1024 would truncate experience sections.
-      // 4096 covers even verbose 3-page resumes with room to spare.
-      maxOutputTokens: 4096,
-      // WHY temperature 0.3: We want creative rewriting but not hallucination.
-      // Lower temp = more faithful to base resume. Higher = more creative but risky.
+      maxOutputTokens: 1500,
       temperature: 0.3,
     },
   });
 
-  const userPrompt = buildUserPrompt({ baseResume, jobDescription, missingKeywords, jdKeywords });
+  const userPrompt = buildUserPrompt({ baseResume, jobDescription });
 
-  const result = await model.generateContent(userPrompt);
-  const rawText = result.response.text();
-
-  // Parse and validate the JSON response
+  // Catch Gemini SDK errors here and convert to structured error objects
+  // before they propagate. Without this, the raw SDK message reaches
+  // sidepanel as { code: 'UNKNOWN', message: <giant string> }.
+  let result;
+  try {
+    result = await model.generateContent(userPrompt);
+  } catch (err) {
+    throw parseGeminiError(err);
+  }
+  
   return parseResumeJSON(rawText);
 }
 
@@ -113,30 +82,43 @@ function parseResumeJSON(rawText) {
 }
 
 // ─── validateResumeSchema ───────────────────────────────────────────────────
-// Ensure the parsed JSON has all required fields. Fill in defaults for missing ones.
+// Expands the compact short-key JSON the AI returns into the full schema
+// the rest of the app uses. Short keys save ~40% output tokens.
+//
+// Short → Full mapping:
+//   n→name, e→email, ph→phone, lo→location, li→linkedin, su→summary
+//   x→experience: c→company, t→title, d→dates, b→bullets
+//   sk→skills, ed→education: i→institution, dg→degree, d→dates
+//   Bullet: plain string = authentic, {tx, f:1} = flagged
 function validateResumeSchema(data) {
+  // Support both short keys (new) and long keys (fallback for safety)
   return {
-    name: data.name || '',
-    email: data.email || '',
-    phone: data.phone || '',
-    location: data.location || '',
-    linkedin: data.linkedin || '',
-    summary: data.summary || '',
-    experience: (data.experience || []).map(exp => ({
-      company: exp.company || '',
-      title: exp.title || '',
-      dates: exp.dates || '',
-      bullets: (exp.bullets || []).map(b =>
-        typeof b === 'string'
-          ? { text: b, authentic: true }
-          : { text: b.text || '', authentic: b.authentic !== false }
-      ),
+    name:     data.n  || data.name     || '',
+    email:    data.e  || data.email    || '',
+    phone:    data.ph || data.phone    || '',
+    location: data.lo || data.location || '',
+    linkedin: data.li || data.linkedin || '',
+    summary:  data.su || data.summary  || '',
+    experience: (data.x || data.experience || []).map(exp => ({
+      company: exp.c || exp.company || '',
+      title:   exp.t || exp.title   || '',
+      dates:   exp.d || exp.dates   || '',
+      bullets: (exp.b || exp.bullets || []).map(b => {
+        // Plain string = authentic bullet
+        if (typeof b === 'string') return { text: b, authentic: true };
+        // {tx, f:1} = flagged bullet
+        if (b.tx !== undefined) return { text: b.tx, authentic: !b.f };
+        // Legacy long-key format fallback
+        return { text: b.text || '', authentic: b.authentic !== false };
+      }),
     })),
-    skills: Array.isArray(data.skills) ? data.skills : [],
-    education: (data.education || []).map(ed => ({
-      institution: ed.institution || '',
-      degree: ed.degree || '',
-      dates: ed.dates || '',
+    skills: Array.isArray(data.sk || data.skills)
+      ? (data.sk || data.skills)
+      : [],
+    education: (data.ed || data.education || []).map(ed => ({
+      institution: ed.i  || ed.institution || '',
+      degree:      ed.dg || ed.degree      || '',
+      dates:       ed.d  || ed.dates       || '',
     })),
   };
 }
@@ -146,23 +128,41 @@ function validateResumeSchema(data) {
 export function parseGeminiError(err) {
   const msg = err?.message || String(err);
 
-  if (msg.includes('429') || msg.includes('RESOURCE_EXHAUSTED')) {
+  if (msg.includes('429') || msg.includes('RESOURCE_EXHAUSTED') || msg.includes('quota')) {
+
+    // Try to extract the retry delay Gemini gives us (e.g. "53.809189902s")
+    const retryMatch = msg.match(/retry[^0-9]*(\d+(?:\.\d+)?)s/i)
+      || msg.match(/"retryDelay"\s*:\s*"(\d+(?:\.\d+)?)s"/i);
+    const retrySeconds = retryMatch ? Math.ceil(parseFloat(retryMatch[1])) : 60;
+
+    // Distinguish daily cap (RPD) from per-minute (RPM)
+    const isDailyLimit = msg.includes('PerDay') || msg.includes('per_day') || msg.includes('RPD');
+
+    if (isDailyLimit) {
+      return {
+        code: 'DAILY_LIMIT',
+        message: "You've used all your free Gemini requests for today. Your quota resets at midnight Pacific Time. You can also enable billing on your Google AI project for higher limits.",
+        retryAfter: null,
+      };
+    }
+
     return {
       code: 'RATE_LIMIT',
-      message: 'Gemini free tier limit reached. Wait 60 seconds and try again.',
-      retryAfter: 60,
+      message: `Gemini rate limit hit. Wait ${retrySeconds} seconds and try again.`,
+      retryAfter: retrySeconds,
     };
   }
+
   if (msg.includes('401') || msg.includes('API_KEY_INVALID') || msg.includes('invalid api key')) {
     return {
       code: 'INVALID_KEY',
-      message: 'Invalid API key. Check your key in Settings and try again.',
+      message: 'Invalid API key. Check your key in Settings.',
     };
   }
   if (msg.includes('403') || msg.includes('PERMISSION_DENIED')) {
     return {
       code: 'PERMISSION',
-      message: 'API key doesn\'t have access to Gemini. Make sure you\'ve enabled the Generative Language API.',
+      message: "API key doesn't have Gemini access. Make sure you've enabled the Generative Language API in your Google Cloud project.",
     };
   }
   if (msg.includes('500') || msg.includes('INTERNAL')) {
@@ -173,6 +173,6 @@ export function parseGeminiError(err) {
   }
   return {
     code: 'UNKNOWN',
-    message: `AI error: ${msg.slice(0, 120)}`,
+    message: `AI error: ${msg.slice(0, 100)}`,
   };
 }

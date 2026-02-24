@@ -19,7 +19,7 @@ let debounceTimer = null;
 let lastExtractedUrl = null;
 let badgeEl = null;
 
-// ─── Determine which extractor to use ────────────────────────────────────
+//Determine which extractor to use
 function getExtractor() {
   const host = window.location.hostname;
   if (host.includes('linkedin.com')) return extractLinkedInJob;
@@ -27,7 +27,7 @@ function getExtractor() {
   return null;
 }
 
-// ─── Attempt extraction and relay to background ───────────────────────────
+//Attempt extraction and relay to background
 function tryExtract() {
   const extractor = getExtractor();
   if (!extractor) return;

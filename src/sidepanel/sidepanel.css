@@ -23,7 +23,7 @@
   --dim:    #162030;
 }
 
-/* ─── Reset ─────────────────────────────────────────────────────────────── */
+/* Reset */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 html, body {
@@ -43,14 +43,14 @@ body {
   overflow-y: auto;
 }
 
-/* ─── Top gradient bar ────────────────────────────────────────────────────── */
+/* Top gradient bar */
 .topbar {
   height: 3px;
   background: linear-gradient(90deg, var(--blue), var(--teal) 50%, var(--green));
   flex-shrink: 0;
 }
 
-/* ─── Nav header ──────────────────────────────────────────────────────────── */
+/* Nav header */
 .nav-header {
   display: flex;
   align-items: center;
@@ -118,7 +118,7 @@ body {
   flex-shrink: 0;
 }
 
-/* ─── Tab bar ─────────────────────────────────────────────────────────────── */
+/* Tab bar */
 .tabs {
   display: flex;
   background: var(--s2);
@@ -162,17 +162,17 @@ body {
   border-radius: 2px 2px 0 0;
 }
 
-/* ─── Tab panels ─────────────────────────────────────────────────────────── */
+/* Tab panels */
 .tab-panel {
   padding-bottom: 32px;
 }
 
-/* ─── Section ─────────────────────────────────────────────────────────────── */
+/* Section */
 .section {
   padding: 14px 14px 0;
 }
 
-/* ─── Field labels ────────────────────────────────────────────────────────── */
+/* Field labels */
 .field-label {
   font-family: 'JetBrains Mono', monospace;
   font-size: 8.5px;
@@ -183,7 +183,7 @@ body {
   display: block;
 }
 
-/* ─── Field inputs ────────────────────────────────────────────────────────── */
+/* Field inputs */
 .field-input {
   width: 100%;
   background: var(--s2);
@@ -250,14 +250,14 @@ body {
   margin-bottom: 14px;
 }
 
-/* ─── Divider ─────────────────────────────────────────────────────────────── */
+/* Divider */
 .divider {
   height: 1px;
   background: var(--bd);
   margin: 14px 14px;
 }
 
-/* ─── Detected job card ───────────────────────────────────────────────────── */
+/* Detected job card */
 .job-card {
   background: var(--s2);
   border: 1px solid var(--teal);
@@ -302,7 +302,7 @@ body {
   margin-top: 4px;
 }
 
-/* ─── Score ring + keyword tags ───────────────────────────────────────────── */
+/* Score ring + keyword tags */
 .score-row {
   display: flex;
   align-items: center;
@@ -360,7 +360,84 @@ body {
   background: rgba(248, 113, 113, 0.07);
 }
 
-/* ─── Buttons ─────────────────────────────────────────────────────────────── */
+/* Skill Gap Impact Blocks */
+
+/* Container for one impact group (Hard / Soft / Other) */
+.impact-block {
+  margin-bottom: 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border1);
+  background: var(--surface1);
+  overflow: hidden;
+}
+
+/* Header row: skill type on left, impact badge on right */
+.impact-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 10px 6px;
+  border-bottom: 1px solid var(--border1);
+}
+
+/* Left side: skill type name (Hard Skills / Soft Skills / Other) */
+.impact-skill {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: 0.01em;
+}
+
+/* Right side: impact pill (High / Medium / Low) */
+.impact-level {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  padding: 2px 7px;
+  border-radius: 20px;
+  text-transform: uppercase;
+}
+
+/* Colour-code the impact pill by level */
+.impact-block:nth-child(1) .impact-level {   /* Hard Skills = High Impact */
+  background: rgba(248, 113, 113, 0.12);
+  color: #f87171;
+  border: 1px solid rgba(248, 113, 113, 0.3);
+}
+.impact-block:nth-child(2) .impact-level {   /* Soft Skills = Medium Impact */
+  background: rgba(251, 191, 36, 0.12);
+  color: #fbbf24;
+  border: 1px solid rgba(251, 191, 36, 0.3);
+}
+.impact-block:nth-child(3) .impact-level {   /* Other = Low Impact */
+  background: rgba(139, 160, 187, 0.12);
+  color: var(--muted);
+  border: 1px solid rgba(139, 160, 187, 0.2);
+}
+
+/* Subtle connecting line between header and tags */
+.impact-desc {
+  font-size: 10px;
+  color: var(--muted);
+  padding: 5px 10px 0;
+  line-height: 1.4;
+}
+
+/* Tag cloud */
+.impact-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 6px 10px 8px;
+}
+
+/* Empty block — hide it entirely so there's no visual gap */
+.impact-block:has(.impact-tags:empty) {
+  display: none;
+}
+
+/* Buttons */
 .btn-primary {
   width: 100%;
   display: flex;
@@ -476,7 +553,7 @@ body {
   opacity: 0.7;
 }
 
-/* ─── API key row ─────────────────────────────────────────────────────────── */
+/* API key row */
 .api-key-row {
   display: flex;
   gap: 6px;
@@ -487,7 +564,7 @@ body {
   flex: 1;
 }
 
-/* ─── Validation result ───────────────────────────────────────────────────── */
+/* Validation result */
 .validation-result {
   font-size: 11px;
   padding: 6px 10px;
@@ -508,7 +585,7 @@ body {
   color: var(--red);
 }
 
-/* ─── Resume status ───────────────────────────────────────────────────────── */
+/* Resume status */
 .resume-status {
   display: flex;
   align-items: center;
@@ -530,7 +607,7 @@ body {
   font-size: 13px;
 }
 
-/* ─── Or divider ──────────────────────────────────────────────────────────── */
+/* Or divider */
 .or-divider {
   display: flex;
   align-items: center;
@@ -548,7 +625,7 @@ body {
   background: var(--bd);
 }
 
-/* ─── Loading state ───────────────────────────────────────────────────────── */
+/* Loading state */
 .loading-state {
   display: flex;
   flex-direction: column;
@@ -581,7 +658,7 @@ body {
   color: var(--muted);
 }
 
-/* ─── Error state ─────────────────────────────────────────────────────────── */
+/* Error state */
 .error-state {
   display: flex;
   flex-direction: column;
@@ -603,7 +680,7 @@ body {
   max-width: 260px;
 }
 
-/* ─── Resume preview ──────────────────────────────────────────────────────── */
+/*Resume preview */
 .resume-preview {
   background: var(--s2);
   border: 1px solid var(--bd);
@@ -713,7 +790,7 @@ body {
   color: var(--sub);
 }
 
-/* ─── Warn box ────────────────────────────────────────────────────────────── */
+/*Warn box*/
 .warn-box {
   background: rgba(251, 191, 36, 0.06);
   border: 1px solid rgba(251, 191, 36, 0.2);
@@ -729,7 +806,7 @@ body {
 
 .warn-icon { flex-shrink: 0; }
 
-/* ─── Filename preview ────────────────────────────────────────────────────── */
+/*Filename preview */
 .filename-preview {
   font-family: 'JetBrains Mono', monospace;
   font-size: 9.5px;
@@ -738,14 +815,14 @@ body {
   padding-top: 4px;
 }
 
-/* ─── Preview actions ─────────────────────────────────────────────────────── */
+/* Preview actions*/
 .preview-actions {
   padding-top: 10px;
   border-top: 1px solid var(--bd);
   margin-top: 0;
 }
 
-/* ─── History list ────────────────────────────────────────────────────────── */
+/*History list*/
 .history-list {
   display: flex;
   flex-direction: column;
@@ -801,7 +878,7 @@ body {
   flex-shrink: 0;
 }
 
-/* ─── Status dropdown ─────────────────────────────────────────────────────── */
+/* Status dropdown*/
 .status-dropdown {
   position: fixed;
   background: var(--s2);
@@ -833,7 +910,7 @@ body {
   color: var(--text);
 }
 
-/* ─── Onboarding / setup banners ──────────────────────────────────────────── */
+/*Onboarding / setup banners */
 .onboarding-banner {
   display: flex;
   align-items: flex-start;
@@ -894,7 +971,7 @@ body {
   font-size: 14px;
 }
 
-/* ─── Danger zone ─────────────────────────────────────────────────────────── */
+/* Danger zone*/
 .danger-zone {
   margin-top: 20px;
   padding-top: 14px;
@@ -910,7 +987,7 @@ body {
   margin-bottom: 8px;
 }
 
-/* ─── Empty state ─────────────────────────────────────────────────────────── */
+/*Empty state*/
 .empty-state {
   display: flex;
   flex-direction: column;
@@ -924,7 +1001,7 @@ body {
 .empty-title { font-size: 13px; font-weight: 600; color: var(--sub); }
 .empty-desc { font-size: 11px; color: var(--muted); }
 
-/* ─── Links ───────────────────────────────────────────────────────────────── */
+/*Links*/
 .link {
   color: var(--teal);
   text-decoration: none;
@@ -932,7 +1009,7 @@ body {
 
 .link:hover { text-decoration: underline; }
 
-/* ─── Utility ─────────────────────────────────────────────────────────────── */
+/*Utility */
 .hidden { display: none !important; }
 
 /* Smooth transitions for state changes */
