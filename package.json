@@ -1,0 +1,19 @@
+{
+  "name": "resumeos",
+  "version": "1.0.0",
+  "description": "Chrome extension to auto-tailor resumes using Gemini AI",
+  "private": true,
+  "scripts": {
+    "build": "node build.js",
+    "watch": "node build.js --watch",
+    "dev": "node build.js --watch"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.21.0",
+    "docx": "^9.1.1",
+    "mammoth": "^1.8.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.24.0"
+  }
+}

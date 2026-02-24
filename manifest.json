@@ -1,0 +1,66 @@
+{
+  "manifest_version": 3,
+  "name": "ResumeOS",
+  "version": "1.0.0",
+  "description": "Auto-tailor your resume to any job listing. Gemini-powered. Zero servers. Your data stays local.",
+
+  "permissions": [
+    "storage",
+    "downloads",
+    "scripting",
+    "activeTab",
+    "sidePanel"
+  ],
+
+  "host_permissions": [
+    "https://www.linkedin.com/*",
+    "https://linkedin.com/*",
+    "https://www.indeed.com/*",
+    "https://indeed.com/*"
+  ],
+
+  "background": {
+    "service_worker": "dist/background.js",
+    "type": "module"
+  },
+
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.linkedin.com/jobs/view/*",
+        "https://linkedin.com/jobs/view/*",
+        "https://www.indeed.com/viewjob*",
+        "https://indeed.com/viewjob*"
+      ],
+      "js": ["dist/content.js"],
+      "css": ["src/content/content.css"],
+      "run_at": "document_idle"
+    }
+  ],
+
+  "side_panel": {
+    "default_path": "src/sidepanel/sidepanel.html"
+  },
+
+  "action": {
+    "default_title": "Open ResumeOS",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+
+  "web_accessible_resources": [
+    {
+      "resources": ["src/sidepanel/*", "src/content/content.css"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}

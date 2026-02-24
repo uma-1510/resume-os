@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ResumeOS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="sidepanel.css">
+</head>
+<body>
+
+  <!-- Top gradient bar (matches architecture doc) -->
+  <div class="topbar"></div>
+
+  <!-- Logo + status row -->
+  <div class="nav-header">
+    <div class="logo">
+      <div class="logo-dot"></div>
+      <span>ResumeOS</span>
+    </div>
+    <div class="status-badge" id="statusBadge">
+      <span class="status-dot"></span>
+      <span id="statusText">Loading...</span>
+    </div>
+  </div>
+
+  <!-- Tab bar -->
+  <div class="tabs">
+    <button class="tab" id="tab-tailor" data-tab="tailor">
+      <span>Tailor</span>
+    </button>
+    <button class="tab" id="tab-history" data-tab="history">
+      <span>History</span>
+    </button>
+    <button class="tab" id="tab-settings" data-tab="settings">
+      <span>Settings</span>
+    </button>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!-- TAB: TAILOR                                            -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <div class="tab-panel" id="panel-tailor">
+
+    <!-- Onboarding banner (shown until setup is complete) -->
+    <div class="onboarding-banner" id="onboardingBanner">
+      <div class="banner-icon">✦</div>
+      <div>
+        <div class="banner-title">Complete setup to start tailoring</div>
+        <div class="banner-desc">Add your name, Gemini API key, and base resume in Settings.</div>
+      </div>
+      <button class="banner-btn" id="bannerGoToSettings">Go to Settings →</button>
+    </div>
+
+    <!-- ── Job detection section ── -->
+    <div class="section" id="jobSection">
+
+      <!-- Auto-detected job card -->
+      <div id="detectedJobCard" class="detected-job hidden">
+        <div class="field-label">Job Detected · <span id="detectedSource" class="source-badge">LinkedIn</span></div>
+        <div class="job-card">
+          <div class="job-title" id="detectedTitle">—</div>
+          <div class="job-company" id="detectedCompany">—</div>
+        </div>
+      </div>
+
+      <!-- No job detected state -->
+      <div id="noJobCard" class="no-job-card hidden">
+        <div class="field-label">No job detected on this page</div>
+        <div class="no-job-hint">Paste a job description below to tailor on any site</div>
+      </div>
+
+      <!-- Manual paste textarea (always present, collapsed when job auto-detected) -->
+      <div id="manualPasteSection">
+        <div class="field-label" id="manualPasteLabel">Or paste job description</div>
+        <textarea
+          id="jobDescTextarea"
+          class="field-textarea"
+          placeholder="Paste any job description here to use on any site..."
+          rows="4"
+        ></textarea>
+      </div>
+    </div>
+
+    <!-- Divider -->
+    <div class="divider"></div>
+
+    <!-- ── Keyword analysis section ── -->
+    <div id="keywordSection" class="section hidden">
+      <div class="score-row">
+        <div class="score-ring" id="scoreRing">
+          <span id="scoreValue">—</span>
+        </div>
+        <div class="score-info">
+          <div class="score-title">Keyword Match</div>
+          <div class="score-sub" id="scoreSubtext">Analysed from your job description</div>
+        </div>
+      </div>
+      <div class="keyword-tags" id="keywordTags"></div>
+    </div>
+
+    <!-- ── Tailor button ── -->
+    <div class="section" id="tailorBtnSection">
+      <button class="btn-primary" id="tailorBtn" disabled>
+        <span class="btn-icon">✨</span>
+        <span id="tailorBtnText">Tailor Resume · ~$0.00</span>
+      </button>
+    </div>
+
+    <!-- ── Loading state ── -->
+    <div id="loadingState" class="loading-state hidden">
+      <div class="spinner"></div>
+      <div class="loading-text">Rewriting with Gemini...</div>
+      <div class="loading-sub">Free API call · Usually under 15s</div>
+    </div>
+
+    <!-- ── Error state ── -->
+    <div id="errorState" class="error-state hidden">
+      <div class="error-icon">⚠</div>
+      <div class="error-msg" id="errorMsg">Something went wrong.</div>
+      <button class="btn-ghost" id="errorRetryBtn">Try Again</button>
+    </div>
+
+    <!-- ── Preview state (after rewrite) ── -->
+    <div id="previewState" class="hidden">
+      <div class="section">
+        <div class="field-label">Rewritten Resume Preview</div>
+        <div class="resume-preview" id="resumePreview"></div>
+
+        <!-- Authenticity warning (shown when some bullets are flagged) -->
+        <div class="warn-box" id="authenticityWarn" style="display:none">
+          <span class="warn-icon">⚠</span>
+          <span id="authenticityWarnText"></span>
+        </div>
+      </div>
+
+      <div class="section preview-actions">
+        <button class="btn-primary" id="downloadBtn">
+          <span class="btn-icon">✓</span>
+          Looks Good — Download .docx
+        </button>
+        <button class="btn-ghost" id="regenerateBtn">
+          <span class="btn-icon">↺</span>
+          Regenerate <span class="btn-cost">(1 API call)</span>
+        </button>
+        <div class="filename-preview" id="filenamePreview"></div>
+      </div>
+    </div>
+
+  </div><!-- /panel-tailor -->
+
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!-- TAB: HISTORY                                           -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <div class="tab-panel hidden" id="panel-history">
+    <div class="section">
+      <div class="field-label" id="historyCount">Applications</div>
+      <div id="historyList" class="history-list">
+        <div class="empty-state">
+          <div class="empty-icon">📋</div>
+          <div class="empty-title">No applications yet</div>
+          <div class="empty-desc">Tailored resumes will appear here</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!-- TAB: SETTINGS                                          -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <div class="tab-panel hidden" id="panel-settings">
+
+    <!-- Setup complete / incomplete banner -->
+    <div class="setup-banner" id="setupBanner" style="display:none">
+      <span class="setup-banner-icon">⚙</span>
+      Complete setup to start tailoring
+    </div>
+
+    <div class="section">
+
+      <!-- Name -->
+      <div class="field-group">
+        <label class="field-label" for="settingsName">Your Name</label>
+        <input
+          type="text"
+          id="settingsName"
+          class="field-input"
+          placeholder="Aryan Sharma"
+        >
+        <div class="field-hint">Used in the output filename: Name_Company_Role.docx</div>
+      </div>
+
+      <!-- API Key -->
+      <div class="field-group">
+        <label class="field-label" for="settingsApiKey">Gemini API Key</label>
+        <div class="api-key-row">
+          <input
+            type="password"
+            id="settingsApiKey"
+            class="field-input"
+            placeholder="Mkow••••••••••••••••••••••••"
+            autocomplete="off"
+          >
+          <button class="btn-icon-only" id="toggleApiKeyVisibility" title="Show/hide key">
+            <span id="keyVisIcon">👁</span>
+          </button>
+        </div>
+        <div class="field-hint">
+          Stored locally only. Never sent to any server other than Google's Gemini API.
+          Same model as saved passwords. <a href="https://aistudio.google.com/app/apikey" target="_blank" class="link">Get free key →</a>
+        </div>
+        <!-- Inline key validation result -->
+        <div id="keyValidationResult" class="validation-result hidden"></div>
+      </div>
+
+      <!-- Base Resume -->
+      <div class="field-group">
+        <label class="field-label">Base Resume</label>
+        <div id="resumeStatus" class="resume-status hidden">
+          <span class="resume-status-icon" id="resumeStatusIcon">✓</span>
+          <span id="resumeStatusText">No resume uploaded</span>
+        </div>
+        <div id="resumeError" class="field-error hidden"></div>
+
+        <!-- Upload button -->
+        <label for="resumeFileInput" class="btn-ghost btn-upload">
+          <span class="btn-icon">↑</span>
+          Upload resume (.docx / .txt)
+        </label>
+        <input
+          type="file"
+          id="resumeFileInput"
+          accept=".docx,.txt"
+          style="display:none"
+        >
+
+        <!-- Or paste divider -->
+        <div class="or-divider"><span>or paste text</span></div>
+
+        <!-- Paste textarea -->
+        <textarea
+          id="resumePasteArea"
+          class="field-textarea"
+          placeholder="Paste your resume text here..."
+          rows="6"
+        ></textarea>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- Save button -->
+      <button class="btn-primary" id="saveSettingsBtn">
+        <span id="saveSettingsBtnText">Save Settings</span>
+      </button>
+
+      <!-- Danger zone -->
+      <div class="danger-zone">
+        <div class="danger-title">Data</div>
+        <button class="btn-danger" id="clearMemoryBtn">Clear career memory</button>
+        <div class="field-hint" style="margin-top:6px;">Removes all session history and preference data. Cannot be undone.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Status dropdown for history items -->
+  <div id="statusDropdown" class="status-dropdown hidden">
+    <button data-status="tailored">✦ Tailored</button>
+    <button data-status="applied">📤 Applied</button>
+    <button data-status="interview">🎉 Interview</button>
+    <button data-status="offer">⭐ Offer</button>
+    <button data-status="rejected">✗ Rejected</button>
+  </div>
+
+  <script type="module" src="sidepanel.js"></script>
+</body>
+</html>
